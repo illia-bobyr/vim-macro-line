@@ -186,7 +186,12 @@ function! Test_default_register() abort
   let g:macro_line_register = 'm'
   call assert_equal('m', macro_line#default_register())
   unlet g:macro_line_register
-  if exists('*reg_recorded') && reg_recorded() ==# ''
+  if exists('*reg_recorded')
+    if reg_recorded() ==# ''
+      call assert_equal('q', macro_line#default_register())
+    endif
+  else
+    " Vim: there is no reg_recorded().
     call assert_equal('q', macro_line#default_register())
   endif
 endfunction

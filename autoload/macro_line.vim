@@ -92,7 +92,7 @@ function! macro_line#parse(line) abort
 endfunction
 
 " The register to save when none was given: g:macro_line_register, else the
-" register last recorded into, else "q".
+" register last recorded into (reg_recorded(), Neovim only), else "q".
 function! macro_line#default_register() abort
   let l:reg = get(g:, 'macro_line_register', '')
   if l:reg ==# '' && exists('*reg_recorded')

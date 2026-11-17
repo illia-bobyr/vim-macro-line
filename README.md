@@ -39,8 +39,8 @@ Needs `keytrans()`: Vim 9.0 or Neovim 0.8.
 
 Default bindings, in Normal mode.  Prefix with `"x` to use register `x`:
 
-- `<Leader>mp` -- put a macro line below the cursor.  Without a register: the
-  register you recorded into last, else `q`.
+- `<Leader>mp` -- put a macro line below the cursor.  Without a register:
+  in Neovim, the register you recorded into last; in Vim, `q`.
 - `<Leader>mP` -- the same, above the cursor.
 - `<Leader>ml` -- load the macro on the cursor line into its register (or into
   `x`, with `"x`).  `[count]` lines, or the selected lines in Visual mode.

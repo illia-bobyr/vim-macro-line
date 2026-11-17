@@ -101,8 +101,10 @@ To use other keys, either set the |macro-line-options| below, or map the
 :[line]MacroPut [x]     Put register [x] as a macro line below [line]
                         (default: the cursor line), with the same indent, and
                         move the cursor to it.  Without [x], uses
-                        |g:macro_line_register|, else the register last
-                        recorded into (|reg_recorded()|), else "q".
+                        |g:macro_line_register|.  When that is empty: in
+                        Neovim, the register last recorded into
+                        (reg_recorded()); in Vim, or when nothing was
+                        recorded yet, "q".
 
                         The line is wrapped to suit the file, see
                         |g:macro_line_templates|.
@@ -157,8 +159,9 @@ g:macro_line_no_mappings        (default: 0)
 
                                                       *g:macro_line_register*
 g:macro_line_register           (default: "")
-        Register |:MacroPut| saves when none is given.  When empty: the
-        register last recorded into, else "q".
+        Register |:MacroPut| saves when none is given.  When empty: in
+        Neovim, the register last recorded into (reg_recorded()); in Vim, or
+        when nothing was recorded yet, "q".
 
                                                      *g:macro_line_templates*
 g:macro_line_templates          (default: see below)
