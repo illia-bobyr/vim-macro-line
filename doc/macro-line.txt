@@ -1,0 +1,217 @@
+*macro-line.txt*  Keep macros as readable lines inside the files they work on.
+
+Author:  Illia Bobyr
+License: MIT, see LICENSE.
+
+==============================================================================
+CONTENTS                                                 *macro-line-contents*
+
+  1. Introduction .............................. |macro-line-introduction|
+  2. Format .................................... |macro-line-format|
+  3. Mappings .................................. |macro-line-mappings|
+  4. Commands .................................. |macro-line-commands|
+  5. Options ................................... |macro-line-options|
+  6. Functions ................................. |macro-line-functions|
+
+==============================================================================
+1. INTRODUCTION                                      *macro-line* *macro-line-introduction*
+
+Some macros are specific to one file or a group of files, yet useful well
+beyond one session.  This plugin keeps such a macro inside the file it works
+on, as a readable line next to your notes on how to use it, and loads it back
+into a register when you need it again.
+
+Writing a register into a file as is does not work well: recorded macros are
+full of control characters and terminal key codes.  This plugin writes them in
+<> key notation instead, using |keytrans()|, which needs Vim 9.0 or Neovim
+0.8.
+
+==============================================================================
+2. FORMAT                                                  *macro-line-format*
+
+A macro line is a Vim |:let-@| command with a "..." string:
+>
+        let @q = "0f D\<Esc>j"
+<
+Special keys are written as "\<Key>", as in any Vim string |expr-quote|.
+Space, "|", "\" and "<" are written as themselves, with "\" and a double
+quote escaped by a "\".  So a literal "<Esc>" typed into the text stays
+"<Esc>", while the key is "\<Esc>".
+
+The macro may be anywhere on a line, with any text around it, so it can be in
+a comment, in a Markdown list item, or follow its description:
+>
+        Renumber the list: `let @n = "0\<C-A>j"`, then 10@n
+        # let @s = "f,r\<CR>" -- splits a CSV row, one field per line
+<
+Only the first macro on a line is used.
+
+Loading reads the "..." string as a string, and nothing else: no code from the
+file is run.  The line is also valid Vim script, so |:source| works too, with
+one catch: Vim makes a register linewise when it is set to a string that ends
+in "\<CR>".  |:MacroLoad| avoids that.
+
+Registers a-z, A-Z, 0-9, ", -, *, + and / can be used.  An uppercase register
+appends when loaded, like `:let @A = ...` does.
+
+==============================================================================
+3. MAPPINGS                                              *macro-line-mappings*
+
+Default key bindings.  Type "x before them to use register x:
+
+  <Leader>mp   Normal  Put a macro line below the cursor.
+  <Leader>mP   Normal  Put a macro line above the cursor.
+  <Leader>ml   Normal  Load the macros on [count] lines from the cursor.
+               Visual  Load the macros on the selected lines.
+  <Leader>mu   Normal  Update the macro on the cursor line.
+
+A default binding is only created when its key is not already mapped, and
+when you have not already mapped the corresponding <Plug> mapping to some key
+yourself.  So existing mappings are never overwritten.
+
+To use other keys, either set the |macro-line-options| below, or map the
+<Plug> mappings directly:
+>
+        nmap <Leader>qp <Plug>(macro-line-put)
+        nmap <Leader>qP <Plug>(macro-line-put-above)
+        nmap <Leader>ql <Plug>(macro-line-load)
+        xmap <Leader>ql <Plug>(macro-line-load)
+        nmap <Leader>qu <Plug>(macro-line-update)
+<
+                                                    *<Plug>(macro-line-put)*
+<Plug>(macro-line-put)
+        Same as |:MacroPut|, with the register given as "x.
+
+                                              *<Plug>(macro-line-put-above)*
+<Plug>(macro-line-put-above)
+        Same as |:MacroPut!|, with the register given as "x.
+
+                                                   *<Plug>(macro-line-load)*
+<Plug>(macro-line-load)
+        Same as |:MacroLoad| on [count] lines, or on the Visual selection.
+
+                                                 *<Plug>(macro-line-update)*
+<Plug>(macro-line-update)
+        Same as |:MacroUpdate|, with the register given as "x.
+
+==============================================================================
+4. COMMANDS                                              *macro-line-commands*
+
+                                                        *:MacroPut*
+:[line]MacroPut [x]     Put register [x] as a macro line below [line]
+                        (default: the cursor line), with the same indent, and
+                        move the cursor to it.  Without [x], uses
+                        |g:macro_line_register|, else the register last
+                        recorded into (|reg_recorded()|), else "q".
+
+                        The line is wrapped to suit the file, see
+                        |g:macro_line_templates|.
+
+                                                        *:MacroPut!*
+:[line]MacroPut! [x]    Same, above [line].
+
+                                                        *:MacroLoad*
+:[range]MacroLoad [x]   Load the macro on each line in [range] (default: the
+                        cursor line) into the register the line names, or
+                        into [x] when given.  `:%MacroLoad` loads every macro
+                        in the file.  Lines without a macro are skipped.
+
+                                                        *:MacroUpdate*
+:[line]MacroUpdate [x]  Rewrite the macro on [line] (default: the cursor line)
+                        with the current content of its register, or of [x]
+                        when given.  The register named on the line and the
+                        text around the macro stay.  Handy after recording the
+                        macro again.
+
+To load the macros of some files whenever you open them:
+>
+        autocmd BufReadPost ~/notes/*.md silent! %MacroLoad
+<
+==============================================================================
+5. OPTIONS                                                *macro-line-options*
+
+Set the mapping options in your |vimrc|, before the plugin is loaded.  The
+others can be changed at any time.
+
+                                                       *g:macro_line_put_map*
+g:macro_line_put_map            (default: "<Leader>mp")
+        Key for |<Plug>(macro-line-put)|.  Empty string: no binding.
+
+                                                 *g:macro_line_put_above_map*
+g:macro_line_put_above_map      (default: "<Leader>mP")
+        Key for |<Plug>(macro-line-put-above)|.  Empty string: no binding.
+
+                                                      *g:macro_line_load_map*
+g:macro_line_load_map           (default: "<Leader>ml")
+        Key for |<Plug>(macro-line-load)|, in Normal and Visual mode.  Empty
+        string: no binding.
+
+                                                    *g:macro_line_update_map*
+g:macro_line_update_map         (default: "<Leader>mu")
+        Key for |<Plug>(macro-line-update)|.  Empty string: no binding.
+
+                                                   *g:macro_line_no_mappings*
+g:macro_line_no_mappings        (default: 0)
+        When 1, no default key bindings are created.  The global
+        |g:no_plugin_maps| has the same effect.
+
+                                                      *g:macro_line_register*
+g:macro_line_register           (default: "")
+        Register |:MacroPut| saves when none is given.  When empty: the
+        register last recorded into, else "q".
+
+                                                     *g:macro_line_templates*
+g:macro_line_templates          (default: see below)
+        Dictionary from 'filetype' to the text a new macro line is wrapped
+        in, with "%s" standing for the `let` command.  Your entries are added
+        to the defaults:
+>
+                {'': '%s', 'text': '%s', 'markdown': '`%s`'}
+<
+        A dotted filetype such as "markdown.pandoc" also matches "markdown".
+        The Markdown default keeps "<" in the macro from being read as HTML.
+        When the macro holds a "`", it is fenced with "``" instead.
+
+        Other filetypes use 'commentstring', with a space added around "%s"
+        when missing.  So in a Python file:
+>
+                # let @q = "dd"
+<
+                                                      *b:macro_line_template*
+b:macro_line_template
+        Template for the current buffer, used before |g:macro_line_templates|.
+
+                                                         *g:macro_line_quiet*
+g:macro_line_quiet              (default: 0)
+        When 1, loading and updating don't echo what they did.  Errors are
+        still shown.
+
+==============================================================================
+6. FUNCTIONS                                            *macro-line-functions*
+
+macro_line#encode({keys})                              *macro_line#encode()*
+        Return {keys} as a "..." string literal in <> key notation.  Throws
+        when {keys} holds bytes that are not valid UTF-8.
+
+macro_line#decode({literal})                           *macro_line#decode()*
+        Return the keys the "..." string {literal} stands for.  Throws when
+        {literal} is not a plain double quoted string.
+
+macro_line#format({reg})                               *macro_line#format()*
+        Return the `let @r = "..."` command for register {reg}.
+
+macro_line#parse({line})                                *macro_line#parse()*
+        Find the first macro on the text {line}.  Return {} when there is
+        none, otherwise a dictionary with "register", "literal" (the string
+        as written), and "start" and "end", the byte range of the literal.
+
+macro_line#put({reg}, {lnum}, {above})                    *macro_line#put()*
+macro_line#load({line1}, {line2}, {reg})                 *macro_line#load()*
+macro_line#update({lnum}, {reg})                       *macro_line#update()*
+        What |:MacroPut|, |:MacroLoad| and |:MacroUpdate| call.  An empty
+        {reg} means no register was given.  put() returns the new line
+        number, load() the list of registers set, update() 1 on success; 0
+        or [] on error.
+
+==============================================================================
+ vim:tw=78:ts=8:noet:ft=help:norl:
